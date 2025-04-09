@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoGo - Mobilité Électrique au Togo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-green: #15b828;
+            --primary-orange: #fb8e05;
+            --light-gray: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 56px;
+        }
+        
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-green) !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+        
+        .btn-primary:hover {
+            background-color: #119922;
+            border-color: #119922;
+        }
+        
+        .btn-secondary {
+            background-color: var(--primary-orange);
+            border-color: var(--primary-orange);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e07d04;
+            border-color: #e07d04;
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .vehicle-card {
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .vehicle-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .vehicle-img {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .map-container {
+            height: 400px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .stats-card {
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 30px 0;
+            margin-top: 50px;
+        }
+        
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 0.25rem rgba(21, 184, 40, 0.25);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-green);
+        }
+        
+        .reservation-form {
+            background-color: var(--light-gray);
+            padding: 30px;
+            border-radius: 10px;
+        }
+        
+        .page-section {
+            display: none;
+            padding: 60px 0;
+        }
+        
+        .page-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .payment-method {
+            cursor: pointer;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .payment-method:hover {
+            border-color: var(--primary-green);
+        }
+        
+        .payment-method.selected {
+            border-color: var(--primary-green);
+            background-color: rgba(21, 184, 40, 0.1);
+        }
+        
+        .payment-method img {
+            height: 40px;
+            object-fit: contain;
+        }
+        
+        #qrCodeContainer {
+            margin: 20px auto;
+            text-align: center;
+        }
+        
+        .price-badge {
+            font-size: 1.2rem;
+            padding: 10px 15px;
+        }
+        
+        .distance-badge {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .route-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .marker-icon {
+            background-size: cover;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .distance-option {
+            cursor: pointer;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .distance-option:hover {
+            border-color: var(--primary-green);
+            background-color: rgba(21, 184, 40, 0.05);
+        }
+        
+        .distance-option.selected {
+            border-color: var(--primary-green);
+            background-color: rgba(21, 184, 40, 0.1);
+        }
+
+        .page-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-green);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .page-transition.active {
+            opacity: 1;
+        }
+
+        .balance-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-green);
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .user-balance {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background-color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            font-weight: bold;
+            color: var(--primary-green);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Affichage du solde utilisateur -->
+    <div class="user-balance" id="userBalance">
+        Solde: <span id="balanceAmount">0</span> FCFA
+    </div>
+
+    <!-- Animation de transition entre pages -->
+    <div class="page-transition" id="pageTransition"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#home">
+                <span style="color: var(--primary-green);">Eco</span><span style="color: var(--primary-orange);">Go</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#vehicles">Véhicules</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#reservation">Réservation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#map">Carte</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#recharge">Recharger</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#login" id="loginLink">Connexion</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="#register" id="registerLink">Inscription</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Pages -->
+    <div id="home" class="page-section active">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-4">Mobilité Électrique pour Étudiants</h1>
+                <p class="lead mb-5">Réservez facilement des motos et navettes électriques pour vos déplacements au Togo</p>
+                <a href="#vehicles" class="btn btn-primary btn-lg me-2">Voir les véhicules</a>
+                <a href="#reservation" class="btn btn-secondary btn-lg">Réserver maintenant</a>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-4">
+                        <div class="card stats-card">
+                            <div class="card-body">
+                                <h3 class="card-title" id="availableBikes">12</h3>
+                                <p class="card-text">Motos disponibles</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card stats-card">
+                            <div class="card-body">
+                                <h3 class="card-title" id="availableShuttles">5</h3>
+                                <p class="card-text">Navettes disponibles</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card stats-card">
+                            <div class="card-body">
+                                <h3 class="card-title">150+</h3>
+                                <p class="card-text">Étudiants satisfaits</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vehicles Section -->
+        <section id="vehicles-section" class="py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5">Nos Véhicules</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card vehicle-card">
+                            <img src="https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" class="card-img-top vehicle-img" alt="Moto électrique">
+                            <div class="card-body">
+                                <h5 class="card-title">Moto Électrique EcoGo</h5>
+                                <p class="card-text">Parfaite pour les déplacements rapides en ville. Autonomie de 80km.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Disponible</span>
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reservationModal">Réserver</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card vehicle-card">
+                            <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" class="card-img-top vehicle-img" alt="Navette électrique">
+                            <div class="card-body">
+                                <h5 class="card-title">Navette Électrique EcoGo</h5>
+                                <p class="card-text">Idéale pour les groupes. Capacité: 8 passagers. Autonomie de 120km.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Disponible</span>
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reservationModal">Réserver</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Map Section -->
+        <section class="py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Suivi en Temps Réel</h2>
+                <div id="home-map" class="map-container"></div>
+                <div class="text-center">
+                    <a href="#map" class="btn btn-primary">Voir la carte complète</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Vehicles Page -->
+    <div id="vehicles" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Nos Véhicules Disponibles</h2>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" class="img-fluid rounded-start h-100" alt="Moto électrique">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Moto Électrique EcoGo</h5>
+                                        <p class="card-text"><small class="text-muted">Autonomie: 80km | Vitesse max: 80km/h</small></p>
+                                        <p class="card-text">Parfaite pour les déplacements rapides en ville. Modèle confortable et économique.</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-success">5 disponibles</span>
+                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reservationModal">Réserver</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" class="img-fluid rounded-start h-100" alt="Navette électrique">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Navette Électrique EcoGo</h5>
+                                        <p class="card-text"><small class="text-muted">Autonomie: 120km | Capacité: 8 passagers</small></p>
+                                        <p class="card-text">Idéale pour les groupes. Confortable et spacieuse pour vos déplacements.</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-success">3 disponibles</span>
+                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reservationModal">Réserver</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a href="#reservation" class="btn btn-primary btn-lg">Réserver maintenant</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Reservation Page -->
+    <div id="reservation" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h2 class="mb-4">Faire une réservation</h2>
+                        <div class="reservation-form">
+                            <form id="reservationPageForm">
+                                <div class="mb-3">
+                                    <label for="reservationType" class="form-label">Type de véhicule</label>
+                                    <select class="form-select" id="reservationType" required>
+                                        <option value="">Sélectionner...</option>
+                                        <option value="moto">Moto électrique</option>
+                                        <option value="navette">Navette électrique</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reservationDate" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="reservationDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reservationTime" class="form-label">Heure</label>
+                                    <input type="time" class="form-control" id="reservationTime" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Distance à parcourir</label>
+                                    <div id="distanceOptions">
+                                        <!-- Les options de distance seront générées dynamiquement -->
+                                    </div>
+                                </div>
+                                <div class="route-info">
+                                    <h5>Détails du trajet</h5>
+                                    <p>Distance: <span id="distanceValue">0</span> km</p>
+                                    <p>Prix: <span id="priceValue" class="badge price-badge bg-success">0 FCFA</span></p>
+                                    <p>Solde disponible: <span id="availableBalance" class="badge bg-primary">0 FCFA</span></p>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="payButton" disabled>Payer avec mon solde</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h2 class="mb-4">Votre réservation</h2>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="reservationSummary" class="text-center py-5">
+                                    <i class="bi bi-calendar-event" style="font-size: 3rem; color: var(--primary-green);"></i>
+                                    <p class="mt-3">Aucune réservation en cours</p>
+                                </div>
+                                <div id="qrCodeContainer" style="display: none;"></div>
+                                <div id="downloadTicket" class="text-center mt-3" style="display: none;">
+                                    <button class="btn btn-success" id="downloadBtn">
+                                        <i class="bi bi-download"></i> Télécharger le ticket
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Recharge Page -->
+    <div id="recharge" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="auth-container">
+                            <h2 class="text-center mb-4">Recharger votre compte</h2>
+                            <div class="balance-display">
+                                Solde actuel: <span id="currentBalance">0</span> FCFA
+                            </div>
+                            <form id="rechargeForm">
+                                <div class="mb-3">
+                                    <label for="rechargeAmount" class="form-label">Montant à recharger (FCFA)</label>
+                                    <input type="number" class="form-control" id="rechargeAmount" min="500" step="100" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Méthode de paiement</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="payment-method" data-method="moov">
+                                                <img src="https://th.bing.com/th/id/R.ffb5d84bc424a22b9d35906258c196bf?rik=fvt8Oi1n29uJXQ&pid=ImgRaw&r=0" alt="Moov Money" class="img-fluid mb-2">
+                                                <p class="mb-0">Flooz Money</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="payment-method" data-method="mix">
+                                                <img src="https://th.bing.com/th/id/OIP.rDd-CCFbgp9C83Ar_rCNXwAAAA?w=167&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" alt="Mix by Yas" class="img-fluid mb-2">
+                                                <p class="mb-0">Mix by Yas</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="rechargePaymentDetails" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="rechargePhone" class="form-label">Numéro de téléphone</label>
+                                        <input type="tel" class="form-control" id="rechargePhone" placeholder="Ex: 90234567" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="rechargePin" class="form-label">Code secret</label>
+                                        <input type="password" class="form-control" id="rechargePin" placeholder="Entrez votre code secret" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Recharger</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Map Page -->
+    <div id="map" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Suivi des Véhicules en Temps Réel</h2>
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div id="fullMap" class="map-container"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                Véhicules disponibles
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h5>Motos électriques</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="showBikes" checked>
+                                        <label class="form-check-label" for="showBikes">
+                                            Afficher sur la carte (5 disponibles)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h5>Navettes électriques</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="showShuttles" checked>
+                                        <label class="form-check-label" for="showShuttles">
+                                            Afficher sur la carte (3 disponibles)
+                                        </label>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h5>Légende</h5>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width: 20px; height: 20px; background-color: var(--primary-green); border-radius: 50%; margin-right: 10px;"></div>
+                                    <span>Moto électrique</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 20px; height: 20px; background-color: var(--primary-orange); border-radius: 50%; margin-right: 10px;"></div>
+                                    <span>Navette électrique</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <a href="#reservation" class="btn btn-primary">Faire une réservation</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <div class="auth-container">
+                    <h2 class="text-center mb-4">Connexion</h2>
+                    <form id="loginPageForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>Pas encore inscrit? <a href="#register">Créer un compte</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Register Page -->
+    <div id="register" class="page-section">
+        <section class="py-5">
+            <div class="container">
+                <div class="auth-container">
+                    <h2 class="text-center mb-4">Inscription</h2>
+                    <form id="registerPageForm">
+                        <div class="mb-3">
+                            <label for="registerName" class="form-label">Nom complet</label>
+                            <input type="text" class="form-control" id="registerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPhone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control" id="registerPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerConfirmPassword" class="form-label">Confirmer le mot de passe</label>
+                            <input type="password" class="form-control" id="registerConfirmPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="registerTerms" required>
+                            <label class="form-check-label" for="registerTerms">J'accepte les conditions d'utilisation</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">S'inscrire</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>Déjà inscrit? <a href="#login">Se connecter</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>EcoGo</h5>
+                    <p>La solution de mobilité électrique pour les étudiants au Togo.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Liens utiles</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#home" class="text-white">Accueil</a></li>
+                        <li><a href="#vehicles" class="text-white">Véhicules</a></li>
+                        <li><a href="#map" class="text-white">Carte</a></li>
+                        <li><a href="#recharge" class="text-white">Recharger</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <p>contact@ecogo.tg<br>+228 12 34 56 78</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2023 EcoGo Togo. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <!-- Reservation Modal -->
+    <div class="modal fade" id="reservationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Réservation rapide</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickReservationForm">
+                        <div class="mb-3">
+                            <label class="form-label">Véhicule:</label>
+                            <p id="modalVehicleName">Moto Électrique EcoGo</p>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickReservationDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="quickReservationDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickReservationTime" class="form-label">Heure</label>
+                            <input type="time" class="form-control" id="quickReservationTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Distance à parcourir</label>
+                            <div id="modalDistanceOptions">
+                                <!-- Options de distance générées dynamiquement -->
+                            </div>
+                        </div>
+                        <div class="route-info">
+                            <p>Distance: <span id="modalDistanceValue">0</span> km</p>
+                            <p>Prix: <span id="modalPriceValue" class="badge price-badge bg-success">0 FCFA</span></p>
+                            <p>Solde disponible: <span id="modalAvailableBalance" class="badge bg-primary">0 FCFA</span></p>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="modalPayButton" disabled>Payer avec mon solde</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // ==================== GESTION DES PAGES ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Afficher la page correspondant au hash dans l'URL
+            function showPageFromHash() {
+                const hash = window.location.hash.substring(1) || 'home';
+                const page = document.getElementById(hash);
+                
+                // Masquer toutes les pages
+                document.querySelectorAll('.page-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Afficher la page demandée
+                if (page) {
+                    page.classList.add('active');
+                } else {
+                    document.getElementById('home').classList.add('active');
+                }
+                
+                // Mettre à jour le lien actif dans la navbar
+                updateActiveNavLink();
+            }
+            
+            // Mettre à jour le lien actif dans la navbar
+            function updateActiveNavLink() {
+                const currentHash = window.location.hash.substring(1) || 'home';
+                document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+                    const linkHash = link.getAttribute('href').substring(1);
+                    if (linkHash === currentHash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Écouter les changements de hash
+            window.addEventListener('hashchange', showPageFromHash);
+            
+            // Initialiser avec la page actuelle
+            showPageFromHash();
+            
+            // Empêcher le comportement par défaut des liens
+            document.querySelectorAll('a[href^="#"]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href !== '#' && href !== '#!') {
+                        e.preventDefault();
+                        window.location.hash = href;
+                    }
+                });
+            });
+            
+            // Initialiser les autres fonctionnalités
+            initFeatures();
+        });
+
+        // ==================== FONCTIONNALITÉS ====================
+        function initFeatures() {
+            // Gestion du compte
+            function getAccountBalance() {
+                return parseFloat(localStorage.getItem('ecogo_balance')) || 0;
+            }
+
+            function setAccountBalance(amount) {
+                localStorage.setItem('ecogo_balance', amount.toString());
+                updateBalanceDisplay();
+            }
+
+            function updateBalanceDisplay() {
+                const balance = getAccountBalance();
+                const balanceDisplay = document.getElementById('currentBalance');
+                const userBalance = document.getElementById('balanceAmount');
+                const availableBalance = document.getElementById('availableBalance');
+                const modalAvailableBalance = document.getElementById('modalAvailableBalance');
+                
+                if (balanceDisplay) balanceDisplay.textContent = balance.toFixed(0);
+                if (userBalance) userBalance.textContent = balance.toFixed(0);
+                if (availableBalance) availableBalance.textContent = balance.toFixed(0) + ' FCFA';
+                if (modalAvailableBalance) modalAvailableBalance.textContent = balance.toFixed(0) + ' FCFA';
+                
+                // Afficher/masquer le solde utilisateur
+                const userBalanceContainer = document.getElementById('userBalance');
+                if (localStorage.getItem('ecogo_user')) {
+                    userBalanceContainer.style.display = 'block';
+                } else {
+                    userBalanceContainer.style.display = 'none';
+                }
+            }
+
+            // Tarifs
+            const PRICES = {
+                moto: [
+                    { min: 0, max: 2, price: 200 },
+                    { min: 2, max: 5, price: 400 },
+                    { min: 5, max: 10, price: 700 },
+                    { min: 10, max: Infinity, price: 2000 }
+                ],
+                navette: [
+                    { min: 0, max: 2, price: 300 },
+                    { min: 2, max: 5, price: 600 },
+                    { min: 5, max: 10, price: 1000 },
+                    { min: 10, max: Infinity, price: 2000 }
+                ]
+            };
+
+            // Mise à jour des options de distance
+            function updateDistanceOptions(containerId, priceDisplayId, distanceDisplayId, payButtonId) {
+                const vehicleType = document.getElementById('reservationType')?.value || 
+                                 (containerId === 'modalDistanceOptions' ? 'moto' : '');
+                
+                const distanceOptionsContainer = document.getElementById(containerId);
+                
+                if (!vehicleType) {
+                    distanceOptionsContainer.innerHTML = '<p class="text-muted">Veuillez d\'abord sélectionner un type de véhicule</p>';
+                    return;
+                }
+                
+                distanceOptionsContainer.innerHTML = '';
+                
+                const prices = PRICES[vehicleType];
+                prices.forEach(range => {
+                    const option = document.createElement('div');
+                    option.className = 'distance-option';
+                    option.innerHTML = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="distanceRange" 
+                                   value="${range.min}-${range.max === Infinity ? '+' : range.max}" data-price="${range.price}">
+                            <label class="form-check-label">
+                                ${range.min}-${range.max === Infinity ? '+' : range.max} km - ${range.price} FCFA
+                            </label>
+                        </div>
+                    `;
+                    
+                    option.querySelector('input').addEventListener('change', function() {
+                        if (this.checked) {
+                            document.querySelectorAll(`#${containerId} .distance-option`).forEach(opt => {
+                                opt.classList.remove('selected');
+                            });
+                            option.classList.add('selected');
+                            
+                            document.getElementById(distanceDisplayId).textContent = `${range.min}-${range.max === Infinity ? '+' : range.max}`;
+                            document.getElementById(priceDisplayId).textContent = `${range.price} FCFA`;
+                            
+                            // Activer/désactiver le bouton de paiement selon le solde
+                            const balance = getAccountBalance();
+                            const payButton = document.getElementById(payButtonId);
+                            if (payButton) {
+                                payButton.disabled = balance < range.price;
+                            }
+                        }
+                    });
+                    
+                    distanceOptionsContainer.appendChild(option);
+                });
+            }
+
+            // Écouteur pour le changement de type de véhicule
+            document.getElementById('reservationType')?.addEventListener('change', function() {
+                updateDistanceOptions('distanceOptions', 'priceValue', 'distanceValue', 'payButton');
+            });
+
+            // Initialisation des cartes
+            function initMap(mapId, showAllVehicles = false) {
+                // Coordonnées centrées sur le Togo
+                const map = L.map(mapId).setView([8.6195, 0.8248], showAllVehicles ? 7 : 12);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                
+                // Ajouter des marqueurs pour les véhicules (simulés)
+                const vehicleLocations = showAllVehicles ? [
+                    { type: 'moto', lat: 6.1725, lng: 1.2314, name: 'Moto #E001' }, // Lomé
+                    { type: 'moto', lat: 6.1325, lng: 1.2214, name: 'Moto #E002' }, // Lomé
+                    { type: 'navette', lat: 6.1625, lng: 1.2414, name: 'Navette #S001' }, // Lomé
+                    { type: 'moto', lat: 9.5513, lng: 1.1865, name: 'Moto #E003' }, // Kara
+                    { type: 'navette', lat: 9.5413, lng: 1.1765, name: 'Navette #S002' }, // Kara
+                    { type: 'moto', lat: 8.9833, lng: 1.1333, name: 'Moto #E004' }, // Sokodé
+                    { type: 'navette', lat: 8.9933, lng: 1.1433, name: 'Navette #S003' }, // Sokodé
+                    { type: 'moto', lat: 6.1425, lng: 1.2114, name: 'Moto #E005' } // Lomé
+                ] : [
+                    { type: 'moto', lat: 6.1725, lng: 1.2314, name: 'Moto #E001' }, // Lomé
+                    { type: 'moto', lat: 6.1325, lng: 1.2214, name: 'Moto #E002' }, // Lomé
+                    { type: 'navette', lat: 6.1625, lng: 1.2414, name: 'Navette #S001' } // Lomé
+                ];
+                
+                vehicleLocations.forEach(vehicle => {
+                    const iconColor = vehicle.type === 'moto' ? '#15b828' : '#fb8e05';
+                    const icon = L.divIcon({
+                        className: 'vehicle-icon',
+                        html: `<div style="background-color: ${iconColor}; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>`,
+                        iconSize: [20, 20]
+                    });
+                    
+                    L.marker([vehicle.lat, vehicle.lng], { icon: icon })
+                        .addTo(map)
+                        .bindPopup(`<b>${vehicle.name}</b><br>Type: ${vehicle.type === 'moto' ? 'Moto électrique' : 'Navette électrique'}`);
+                });
+            }
+
+            // Initialiser les cartes si les pages correspondantes existent
+            if (document.getElementById('home-map')) {
+                initMap('home-map', false);
+            }
+
+            if (document.getElementById('fullMap')) {
+                initMap('fullMap', true);
+            }
+
+            // Gestion des méthodes de paiement
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.addEventListener('click', function() {
+                    const form = this.closest('form');
+                    form.querySelectorAll('.payment-method').forEach(m => {
+                        m.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    
+                    // Afficher les détails de paiement correspondants
+                    const detailsId = form.id === 'rechargeForm' ? 'rechargePaymentDetails' : null;
+                    if (detailsId) {
+                        document.getElementById(detailsId).style.display = 'block';
+                    }
+                    form.dataset.paymentMethod = this.dataset.method;
+                });
+            });
+
+            // Formulaire de réservation
+            document.getElementById('reservationPageForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Vérifier que tout est rempli
+                const selectedDistance = this.querySelector('input[name="distanceRange"]:checked');
+                if (!selectedDistance) {
+                    alert('Veuillez sélectionner une distance');
+                    return;
+                }
+                
+                const type = document.getElementById('reservationType').value;
+                const date = document.getElementById('reservationDate').value;
+                const time = document.getElementById('reservationTime').value;
+                const distance = selectedDistance.value;
+                const price = parseFloat(selectedDistance.dataset.price);
+                
+                // Vérifier le solde
+                const balance = getAccountBalance();
+                if (balance < price) {
+                    alert('Solde insuffisant. Veuillez recharger votre compte.');
+                    return;
+                }
+                
+                // Déduire le montant du solde
+                setAccountBalance(balance - price);
+                
+                // Générer un code de réservation
+                const reservationCode = 'ECO' + Math.floor(1000 + Math.random() * 9000);
+                
+                // Afficher le résumé
+                const reservationSummary = document.getElementById('reservationSummary');
+                reservationSummary.innerHTML = `
+                    <h4>Réservation confirmée</h4>
+                    <p><strong>Code:</strong> ${reservationCode}</p>
+                    <p><strong>Type:</strong> ${type === 'moto' ? 'Moto électrique' : 'Navette électrique'}</p>
+                    <p><strong>Date:</strong> ${date} à ${time}</p>
+                    <p><strong>Distance:</strong> ${distance} km</p>
+                    <p><strong>Prix:</strong> ${price} FCFA</p>
+                `;
+                
+                // Générer le QR code
+                const qrCodeContainer = document.getElementById('qrCodeContainer');
+                qrCodeContainer.innerHTML = '';
+                new QRCode(qrCodeContainer, {
+                    text: `EcoGo Reservation|${reservationCode}|${date}|${time}|${type}|${price}`,
+                    width: 150,
+                    height: 150
+                });
+                qrCodeContainer.style.display = 'block';
+                
+                // Afficher le bouton de téléchargement
+                document.getElementById('downloadTicket').style.display = 'block';
+                
+                alert('Paiement effectué avec succès! Votre réservation est confirmée.');
+            });
+
+            // Formulaire de recharge
+            document.getElementById('rechargeForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const amount = parseFloat(document.getElementById('rechargeAmount').value);
+                const phone = document.getElementById('rechargePhone').value;
+                const pin = document.getElementById('rechargePin').value;
+                const method = this.dataset.paymentMethod;
+                
+                if (!amount || !phone || !pin || !method) {
+                    alert('Veuillez remplir tous les champs');
+                    return;
+                }
+                
+                if (amount < 500) {
+                    alert('Le montant minimum de recharge est de 500 FCFA');
+                    return;
+                }
+                
+                // Simuler le processus de recharge
+                setTimeout(() => {
+                    const currentBalance = getAccountBalance();
+                    setAccountBalance(currentBalance + amount);
+                    
+                    alert(`Recharge de ${amount} FCFA effectuée avec succès via ${method === 'moov' ? 'Moov Money' : 'Mix by Yas'}!`);
+                    this.reset();
+                    this.querySelectorAll('.payment-method').forEach(m => {
+                        m.classList.remove('selected');
+                    });
+                    document.getElementById('rechargePaymentDetails').style.display = 'none';
+                }, 1500);
+            });
+
+            // Téléchargement du ticket
+            document.getElementById('downloadBtn')?.addEventListener('click', function() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Titre
+                doc.setFontSize(20);
+                doc.text('EcoGo - Ticket de réservation', 105, 20, { align: 'center' });
+                
+                // QR Code
+                const qrCodeImg = document.querySelector('#qrCodeContainer canvas');
+                const qrCodeData = qrCodeImg.toDataURL('image/png');
+                doc.addImage(qrCodeData, 'PNG', 80, 30, 50, 50);
+                
+                // Détails
+                doc.setFontSize(12);
+                const details = document.getElementById('reservationSummary').textContent;
+                const lines = details.split('\n').filter(line => line.trim() !== '');
+                
+                lines.forEach((line, index) => {
+                    doc.text(line.trim(), 20, 90 + (index * 7));
+                });
+                
+                // Enregistrer le PDF
+                doc.save('EcoGo_Ticket.pdf');
+            });
+
+            // Formulaire de connexion
+            document.getElementById('loginPageForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                localStorage.setItem('ecogo_user', email);
+                alert('Connexion réussie!');
+                window.location.hash = 'home';
+                updateHeader();
+            });
+
+            // Formulaire d'inscription
+            document.getElementById('registerPageForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const user = {
+                    name: document.getElementById('registerName').value,
+                    email: document.getElementById('registerEmail').value,
+                    phone: document.getElementById('registerPhone').value
+                };
+                localStorage.setItem('ecogo_user', JSON.stringify(user));
+                localStorage.setItem('ecogo_balance', '0'); // Initialiser le solde à 0
+                alert('Inscription réussie! Vous êtes maintenant connecté.');
+                window.location.hash = 'home';
+                updateHeader();
+            });
+
+            // Mise à jour du header
+            function updateHeader() {
+                const isLoggedIn = localStorage.getItem('ecogo_user') !== null;
+                const loginLink = document.getElementById('loginLink');
+                const registerLink = document.getElementById('registerLink');
+                
+                if (isLoggedIn) {
+                    const user = JSON.parse(localStorage.getItem('ecogo_user')) || localStorage.getItem('ecogo_user');
+                    const userName = typeof user === 'string' ? user : user.name;
+                    loginLink.textContent = userName || 'Mon compte';
+                    loginLink.href = '#';
+                    registerLink.textContent = 'Déconnexion';
+                    registerLink.classList.remove('btn-primary');
+                    registerLink.classList.add('btn-outline-danger');
+                    registerLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        localStorage.removeItem('ecogo_user');
+                        localStorage.removeItem('ecogo_balance');
+                        updateHeader();
+                        window.location.hash = 'home';
+                    });
+                } else {
+                    loginLink.textContent = 'Connexion';
+                    loginLink.href = '#login';
+                    registerLink.textContent = 'Inscription';
+                    registerLink.classList.add('btn-primary');
+                    registerLink.classList.remove('btn-outline-danger');
+                    registerLink.href = '#register';
+                }
+                
+                updateBalanceDisplay();
+            }
+
+            // Simuler la disponibilité des véhicules
+            function simulateAvailability() {
+                const bikes = document.getElementById('availableBikes');
+                const shuttles = document.getElementById('availableShuttles');
+                
+                if (bikes && shuttles) {
+                    let bikeCount = 12;
+                    let shuttleCount = 5;
+                    
+                    bikes.textContent = bikeCount;
+                    shuttles.textContent = shuttleCount;
+                    
+                    setInterval(() => {
+                        bikeCount = Math.max(0, bikeCount + (Math.random() > 0.5 ? 1 : -1));
+                        shuttleCount = Math.max(0, shuttleCount + (Math.random() > 0.5 ? 1 : -1));
+                        
+                        bikes.textContent = bikeCount;
+                        shuttles.textContent = shuttleCount;
+                    }, 5000);
+                }
+            }
+
+            // Gestion du modal de réservation
+            const reservationModal = document.getElementById('reservationModal');
+            if (reservationModal) {
+                reservationModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const vehicleCard = button.closest('.vehicle-card');
+                    const vehicleName = vehicleCard.querySelector('.card-title').textContent;
+                    
+                    document.getElementById('modalVehicleName').textContent = vehicleName;
+                    
+                    // Mettre à jour les options de distance pour le modal
+                    updateDistanceOptions('modalDistanceOptions', 'modalPriceValue', 'modalDistanceValue', 'modalPayButton');
+                });
+            }
+
+            // Formulaire de réservation rapide
+            document.getElementById('quickReservationForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Vérifier que tout est rempli
+                const selectedDistance = this.querySelector('input[name="distanceRange"]:checked');
+                if (!selectedDistance) {
+                    alert('Veuillez sélectionner une distance');
+                    return;
+                }
+                
+                const vehicleName = document.getElementById('modalVehicleName').textContent;
+                const type = vehicleName.includes('Moto') ? 'moto' : 'navette';
+                const date = document.getElementById('quickReservationDate').value;
+                const time = document.getElementById('quickReservationTime').value;
+                const distance = selectedDistance.value;
+                const price = parseFloat(selectedDistance.dataset.price);
+                
+                // Vérifier le solde
+                const balance = getAccountBalance();
+                if (balance < price) {
+                    alert('Solde insuffisant. Veuillez recharger votre compte.');
+                    return;
+                }
+                
+                // Déduire le montant du solde
+                setAccountBalance(balance - price);
+                
+                // Fermer le modal
+                const modal = bootstrap.Modal.getInstance(reservationModal);
+                modal.hide();
+                
+                // Rediriger vers la page de réservation avec les détails
+                window.location.hash = 'reservation';
+                
+                // Remplir automatiquement les champs sur la page de réservation
+                setTimeout(() => {
+                    document.getElementById('reservationType').value = type;
+                    document.getElementById('reservationDate').value = date;
+                    document.getElementById('reservationTime').value = time;
+                    
+                    // Sélectionner la distance correspondante
+                    const distanceOptions = document.querySelectorAll('#distanceOptions input');
+                    distanceOptions.forEach(option => {
+                        if (option.value === distance) {
+                            option.checked = true;
+                            option.dispatchEvent(new Event('change'));
+                        }
+                    });
+                    
+                    // Afficher le résumé
+                    const reservationCode = 'ECO' + Math.floor(1000 + Math.random() * 9000);
+                    const reservationSummary = document.getElementById('reservationSummary');
+                    reservationSummary.innerHTML = `
+                        <h4>Réservation confirmée</h4>
+                        <p><strong>Code:</strong> ${reservationCode}</p>
+                        <p><strong>Type:</strong> ${vehicleName}</p>
+                        <p><strong>Date:</strong> ${date} à ${time}</p>
+                        <p><strong>Distance:</strong> ${distance} km</p>
+                        <p><strong>Prix:</strong> ${price} FCFA</p>
+                    `;
+                    
+                    // Générer le QR code
+                    const qrCodeContainer = document.getElementById('qrCodeContainer');
+                    qrCodeContainer.innerHTML = '';
+                    new QRCode(qrCodeContainer, {
+                        text: `EcoGo Reservation|${reservationCode}|${date}|${time}|${type}|${price}`,
+                        width: 150,
+                        height: 150
+                    });
+                    qrCodeContainer.style.display = 'block';
+                    
+                    // Afficher le bouton de téléchargement
+                    document.getElementById('downloadTicket').style.display = 'block';
+                    
+                    alert('Paiement effectué avec succès! Votre réservation est confirmée.');
+                }, 500);
+            });
+
+            // Initialisation
+            simulateAvailability();
+            updateHeader();
+            updateBalanceDisplay();
+            
+            // Initialiser les options de distance sur la page de réservation
+            updateDistanceOptions('distanceOptions', 'priceValue', 'distanceValue', 'payButton');
+        }
+    </script>
+</body>
+</html>
